@@ -8,10 +8,9 @@ Aplicativo mobile de moda circular com rastreamento inteligente de peças.
 Desenvolvido em Flutter com design baseado na identidade visual do projeto.
 
 ## Equipe
-- Gabriel Notari (RM 95937) — Arquitetura de rede e monitoramento
-- Priscila Mantovani (RM 555862) — Implementação mobile Flutter
-- Sophie Moreau (RM 557784) — Mapas, geolocalização e Firebase
-
+- Gabriel Notari (RM 95937) 
+- Priscila Mantovani (RM 555862) 
+- Sophie Moreau (RM 557784) 
 ## Funcionalidades
 - Login e cadastro
 - Rastreamento de pedidos com timeline
