@@ -43,21 +43,57 @@ class HomeScreen extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Olá, Priscila', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            Text('Olá, bem-vinda!', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
             const Text('Florê', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Color(0xFF1a5c52), letterSpacing: -0.5)),
           ],
         ),
-        GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen())),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 16)],
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen())),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 16)],
+                ),
+                child: const Icon(Icons.notifications_outlined, color: Color(0xFF2a7d70), size: 22),
+              ),
             ),
-            child: const Icon(Icons.notifications_outlined, color: Color(0xFF2a7d70), size: 22),
-          ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: const Text('Sair da conta', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1a5c52))),
+                    content: const Text('Tem certeza que deseja sair?', style: TextStyle(color: Color(0xFF6b6b6b))),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancelar', style: TextStyle(color: Color(0xFF6b6b6b))),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
+                        child: const Text('Sair', style: TextStyle(color: Color(0xFFd4541a), fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 16)],
+                ),
+                child: const Icon(Icons.logout, color: Color(0xFF6b6b6b), size: 22),
+              ),
+            ),
+          ],
         ),
       ],
     );
