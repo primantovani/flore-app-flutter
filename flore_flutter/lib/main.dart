@@ -1,5 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'services/fcm_service.dart';
 import 'providers/map_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
@@ -9,7 +12,12 @@ import 'screens/map_screen.dart';
 import 'screens/notification_screen.dart';
 import 'screens/profile_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await FCMService().initialize();
   runApp(
     ChangeNotifierProvider(
       create: (_) => MapProvider(),
