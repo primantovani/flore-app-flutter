@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import '../providers/map_provider.dart';
 import '../widgets/weather_card.dart';
 import '../widgets/order_card.dart';
@@ -38,6 +39,18 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _handleRetry(BuildContext context, MapProvider provider) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Verificando localizacao...'), duration: Duration(seconds: 1)),
+    );
+    await provider.retryLocation();
+    if (!context.mounted) return;
+    final status = provider.locationStatus;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Resultado: $status'), duration: const Duration(seconds: 3)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,6 +73,11 @@ class _MapScreenState extends State<MapScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (provider.locationStatus != LocationPermissionStatus.granted &&
+                    provider.locationStatus != LocationPermissionStatus.unknown) ...[
+                  _buildLocationBanner(context, provider),
+                  const SizedBox(height: 16),
+                ],
                 if (provider.weather != null) ...[
                   WeatherCard(weather: provider.weather!),
                   const SizedBox(height: 20),
@@ -84,6 +102,60 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Widget _buildLocationBanner(BuildContext context, MapProvider provider) {
+    String message;
+    String actionLabel;
+    VoidCallback action;
+
+    switch (provider.locationStatus) {
+      case LocationPermissionStatus.serviceDisabled:
+        message = 'O GPS do seu celular esta desligado. Ative a localizacao para ver pontos proximos a voce.';
+        actionLabel = 'Abrir configuracoes de GPS';
+        action = () => Geolocator.openLocationSettings();
+        break;
+      case LocationPermissionStatus.deniedForever:
+        message = 'A permissao de localizacao foi negada permanentemente. Ative manualmente nas configuracoes do app.';
+        actionLabel = 'Abrir configuracoes do app';
+        action = () => Geolocator.openAppSettings();
+        break;
+      default:
+        message = 'Localizacao nao concedida. Usando Sao Paulo como referencia padrao.';
+        actionLabel = 'Tentar novamente';
+        action = () => _handleRetry(context, provider);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFd4541a).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.location_off_outlined, color: Color(0xFFd4541a), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Localizacao indisponivel', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFd4541a))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(message, style: const TextStyle(fontSize: 12, color: Color(0xFF6b6b6b))),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: action,
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
+            child: Text(actionLabel, style: const TextStyle(color: Color(0xFF2a7d70), fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMapCard(BuildContext context, MapProvider provider) {
     return Container(
       height: 300,
@@ -101,7 +173,7 @@ class _MapScreenState extends State<MapScreen> {
               children: [
                 const Icon(Icons.map_outlined, size: 40, color: Color(0xFF2a7d70)),
                 const SizedBox(height: 6),
-                const Text('São Paulo, SP', style: TextStyle(color: Color(0xFF1a5c52), fontWeight: FontWeight.w700, fontSize: 15)),
+                const Text('Sao Paulo, SP', style: TextStyle(color: Color(0xFF1a5c52), fontWeight: FontWeight.w700, fontSize: 15)),
                 Text('${provider.mapPoints.length} pontos ativos', style: const TextStyle(color: Color(0xFF6b6b6b), fontSize: 12)),
               ],
             ),
@@ -139,7 +211,7 @@ class _MapScreenState extends State<MapScreen> {
             bottom: 10,
             left: 12,
             child: Row(children: [
-              _Legend(color: const Color(0xFF2a7d70), label: 'Armazém'),
+              _Legend(color: const Color(0xFF2a7d70), label: 'Armazem'),
               const SizedBox(width: 10),
               _Legend(color: const Color(0xFFd4541a), label: 'Entrega'),
               const SizedBox(width: 10),
