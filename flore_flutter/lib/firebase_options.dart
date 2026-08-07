@@ -19,10 +19,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBUo_J6duRpjDjEe2pgFSbKcvRT5xHRU7U',
-    appId: '1:750575976207:android:6cb3d265ae1b099967887a',
-    messagingSenderId: '750575976207',
-    projectId: 'flore-app-1fdc0',
-    storageBucket: 'flore-app-1fdc0.firebasestorage.app',
+    apiKey: String.fromEnvironment('FIREBASE_API_KEY'),
+    appId: String.fromEnvironment('FIREBASE_APP_ID'),
+    messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
+    storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
   );
 }
