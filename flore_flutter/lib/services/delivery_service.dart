@@ -6,9 +6,13 @@ import '../models/delivery_point.dart';
 class DeliveryService {
   static const String _baseUrl = 'https://flore-back.onrender.com';
 
+  final http.Client _client;
+
+  DeliveryService({http.Client? client}) : _client = client ?? http.Client();
+
   Future<List<DeliveryOrder>> getOrders() async {
     try {
-      final response = await http
+      final response = await _client
           .get(Uri.parse('$_baseUrl/api/orders'))
           .timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
@@ -21,7 +25,7 @@ class DeliveryService {
 
   Future<List<DeliveryPoint>> getMapPoints() async {
     try {
-      final response = await http
+      final response = await _client
           .get(Uri.parse('$_baseUrl/api/map-points'))
           .timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
