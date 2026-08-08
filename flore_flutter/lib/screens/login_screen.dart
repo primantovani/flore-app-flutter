@@ -1,34 +1,55 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
+import '../utils/validators.dart';
+import '../widgets/app_text_field.dart';
+import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthService? authService;
+
+  const LoginScreen({super.key, this.authService});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  late final _authService = widget.authService ?? AuthService();
   bool _isLoading = false;
 
-  void _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preencha todos os campos'),
-          backgroundColor: Color(0xFFd4541a),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+  Future<void> _login() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    if (mounted) Navigator.pushReplacementNamed(context, '/home');
+    try {
+      await _authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+    } on AuthException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError('Não foi possível entrar. Tente novamente.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.orange,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -41,31 +62,48 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFf7f5f2),
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 56),
-              _buildLogo(),
-              const SizedBox(height: 40),
-              _buildTitle(),
-              const SizedBox(height: 32),
-              _buildEmailField(),
-              const SizedBox(height: 14),
-              _buildPasswordField(),
-              const SizedBox(height: 10),
-              _buildForgotPassword(),
-              const SizedBox(height: 28),
-              _buildLoginButton(),
-              const SizedBox(height: 24),
-              _buildDivider(),
-              const SizedBox(height: 24),
-              _buildSignupLink(),
-              const SizedBox(height: 40),
-            ],
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 56),
+                _buildLogo(),
+                const SizedBox(height: 40),
+                _buildTitle(),
+                const SizedBox(height: 32),
+                AppTextField(
+                  label: 'E-mail',
+                  hint: 'seu@email.com',
+                  icon: Icons.mail_outline,
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: Validators.email,
+                ),
+                const SizedBox(height: 14),
+                AppTextField(
+                  label: 'Senha',
+                  hint: '••••••••',
+                  icon: Icons.lock_outline,
+                  controller: _passwordController,
+                  obscureText: true,
+                  validator: Validators.password,
+                ),
+                const SizedBox(height: 10),
+                _buildForgotPassword(),
+                const SizedBox(height: 28),
+                _buildLoginButton(),
+                const SizedBox(height: 24),
+                _buildDivider(),
+                const SizedBox(height: 24),
+                _buildSignupLink(),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
@@ -80,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
           width: 52,
           height: 52,
           decoration: BoxDecoration(
-            color: const Color(0xFF2a7d70),
+            color: AppColors.teal,
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Icon(Icons.yard_outlined, color: Colors.white, size: 28),
@@ -91,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1a5c52),
+            color: AppColors.tealDark,
             letterSpacing: -0.5,
           ),
         ),
@@ -100,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Color(0xFFd4541a),
+            color: AppColors.orange,
             letterSpacing: 2,
           ),
         ),
@@ -114,68 +152,12 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           'Bem-vinda de volta',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF1e1e1e)),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.dark),
         ),
         SizedBox(height: 4),
         Text(
           'Entre na sua conta para continuar',
-          style: TextStyle(fontSize: 14, color: Color(0xFF6b6b6b)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmailField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('E-mail', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1a5c52))),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1e1e1e)),
-          decoration: InputDecoration(
-            hintText: 'seu@email.com',
-            hintStyle: const TextStyle(color: Color(0xFFaaaaaa)),
-            prefixIcon: const Icon(Icons.mail_outline, color: Color(0xFF2a7d70), size: 20),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2a7d70), width: 1.5)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Senha', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1a5c52))),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1e1e1e)),
-          decoration: InputDecoration(
-            hintText: '••••••••',
-            hintStyle: const TextStyle(color: Color(0xFFaaaaaa)),
-            prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF2a7d70), size: 20),
-            suffixIcon: GestureDetector(
-              onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-              child: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: const Color(0xFF6b6b6b), size: 20),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2a7d70), width: 1.5)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          ),
+          style: TextStyle(fontSize: 14, color: AppColors.gray),
         ),
       ],
     );
@@ -185,10 +167,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerRight,
       child: GestureDetector(
-        onTap: () {},
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+        ),
         child: const Text(
           'Esqueci minha senha',
-          style: TextStyle(fontSize: 12, color: Color(0xFF2a7d70), fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -202,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFF2a7d70),
+            color: AppColors.teal,
             borderRadius: BorderRadius.circular(50),
           ),
           child: Center(
@@ -217,21 +202,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildDivider() {
     return Row(children: [
-      const Expanded(child: Divider(color: Color(0xFFe0e0e0))),
+      const Expanded(child: Divider(color: AppColors.border)),
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: 12),
-        child: Text('ou', style: TextStyle(color: Color(0xFF6b6b6b), fontSize: 12)),
+        child: Text('ou', style: TextStyle(color: AppColors.gray, fontSize: 12)),
       ),
-      const Expanded(child: Divider(color: Color(0xFFe0e0e0))),
+      const Expanded(child: Divider(color: AppColors.border)),
     ]);
   }
 
   Widget _buildSignupLink() {
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Text('Não tem uma conta? ', style: TextStyle(color: Color(0xFF6b6b6b), fontSize: 13)),
+      const Text('Não tem uma conta? ', style: TextStyle(color: AppColors.gray, fontSize: 13)),
       GestureDetector(
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen())),
-        child: const Text('Cadastre-se', style: TextStyle(color: Color(0xFF2a7d70), fontSize: 13, fontWeight: FontWeight.w700)),
+        child: const Text('Cadastre-se', style: TextStyle(color: AppColors.teal, fontSize: 13, fontWeight: FontWeight.w700)),
       ),
     ]);
   }
