@@ -29,35 +29,40 @@ void main() {
       });
 
       final service = DeliveryService(client: client);
-      final orders = await service.getOrders();
+      final result = await service.getOrders();
 
-      expect(orders, hasLength(1));
-      expect(orders.first.id, '099');
-      expect(orders.first.itemName, 'Jaqueta Jeans');
+      expect(result.isFallback, isFalse);
+      expect(result.errorMessage, isNull);
+      expect(result.data, hasLength(1));
+      expect(result.data.first.id, '099');
+      expect(result.data.first.itemName, 'Jaqueta Jeans');
     });
 
-    test('cai no fallback mockado quando a API responde erro', () async {
+    test('cai no fallback mockado e expõe o erro quando a API responde erro', () async {
       final client = MockClient((request) async {
         return http.Response('erro interno', 500);
       });
 
       final service = DeliveryService(client: client);
-      final orders = await service.getOrders();
+      final result = await service.getOrders();
 
-      // Fallback atual do service: DeliveryOrder.mockOrders()
-      expect(orders, equals(isA<List<DeliveryOrder>>()));
-      expect(orders, hasLength(DeliveryOrder.mockOrders().length));
+      expect(result.isFallback, isTrue);
+      expect(result.errorMessage, isNotNull);
+      expect(result.data, equals(isA<List<DeliveryOrder>>()));
+      expect(result.data, hasLength(DeliveryOrder.mockOrders().length));
     });
 
-    test('cai no fallback mockado quando o client lança exceção (sem rede)', () async {
+    test('cai no fallback mockado e expõe o erro quando o client lança exceção (sem rede)', () async {
       final client = MockClient((request) async {
         throw Exception('Falha de conexão simulada');
       });
 
       final service = DeliveryService(client: client);
-      final orders = await service.getOrders();
+      final result = await service.getOrders();
 
-      expect(orders, hasLength(DeliveryOrder.mockOrders().length));
+      expect(result.isFallback, isTrue);
+      expect(result.errorMessage, isNotNull);
+      expect(result.data, hasLength(DeliveryOrder.mockOrders().length));
     });
   });
 
@@ -79,22 +84,25 @@ void main() {
       });
 
       final service = DeliveryService(client: client);
-      final points = await service.getMapPoints();
+      final result = await service.getMapPoints();
 
-      expect(points, hasLength(1));
-      expect(points.first.id, 'x1');
-      expect(points.first.label, 'Ponto Teste');
+      expect(result.isFallback, isFalse);
+      expect(result.data, hasLength(1));
+      expect(result.data.first.id, 'x1');
+      expect(result.data.first.label, 'Ponto Teste');
     });
 
-    test('cai no fallback mockado quando a API responde erro', () async {
+    test('cai no fallback mockado e expõe o erro quando a API responde erro', () async {
       final client = MockClient((request) async {
         return http.Response('erro interno', 500);
       });
 
       final service = DeliveryService(client: client);
-      final points = await service.getMapPoints();
+      final result = await service.getMapPoints();
 
-      expect(points, hasLength(DeliveryPoint.mockPoints().length));
+      expect(result.isFallback, isTrue);
+      expect(result.errorMessage, isNotNull);
+      expect(result.data, hasLength(DeliveryPoint.mockPoints().length));
     });
   });
 }
