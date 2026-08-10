@@ -1,6 +1,12 @@
+﻿import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'services/fcm_service.dart';
+import 'services/auth_service.dart';
 import 'providers/map_provider.dart';
+import 'theme/app_colors.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
@@ -9,7 +15,18 @@ import 'screens/map_screen.dart';
 import 'screens/notification_screen.dart';
 import 'screens/profile_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Firebase só está configurado (chaves reais) para Android por enquanto.
+  // Em iOS/macOS/web local, pular a inicialização evita crash nativo por
+  // GOOGLE_APP_ID inválido — sem push notifications nessas plataformas
+  // até a Sophie registrar os apps correspondentes no console Firebase.
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await FCMService().initialize();
+  }
   runApp(
     ChangeNotifierProvider(
       create: (_) => MapProvider(),
@@ -21,14 +38,6 @@ void main() {
 class FloreApp extends StatelessWidget {
   const FloreApp({super.key});
 
-  static const teal     = Color(0xFF2a7d70);
-  static const tealLight= Color(0xFF3d9e8f);
-  static const tealDark = Color(0xFF1a5c52);
-  static const orange   = Color(0xFFd4541a);
-  static const cream    = Color(0xFFf7f5f2);
-  static const dark     = Color(0xFF1e1e1e);
-  static const gray     = Color(0xFF6b6b6b);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -36,22 +45,22 @@ class FloreApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: teal,
-          primary: teal,
-          secondary: orange,
-          surface: cream,
+          seedColor: AppColors.teal,
+          primary: AppColors.teal,
+          secondary: AppColors.orange,
+          surface: AppColors.cream,
         ),
-        scaffoldBackgroundColor: cream,
+        scaffoldBackgroundColor: AppColors.cream,
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
-          backgroundColor: teal,
+          backgroundColor: AppColors.teal,
           foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
         ),
         navigationBarTheme: const NavigationBarThemeData(
           backgroundColor: Colors.white,
-          indicatorColor: Color(0xFFe8f4f1),
+          indicatorColor: AppColors.tealSurface,
           labelTextStyle: WidgetStatePropertyAll(
             TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           ),
@@ -62,12 +71,46 @@ class FloreApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
-      initialRoute: '/login',
+      initialRoute: '/splash',
       routes: {
+        '/splash': (_) => const SplashScreen(),
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignupScreen(),
         '/home': (_) => const MainNavigation(),
       },
+    );
+  }
+}
+
+/// Decide, com base na sessão salva pelo [AuthService], se o usuário cai
+/// direto na Home ou precisa logar de novo.
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _redirect();
+  }
+
+  Future<void> _redirect() async {
+    final isLoggedIn = await AuthService().isLoggedIn();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, isLoggedIn ? '/home' : '/login');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.cream,
+      body: Center(
+        child: CircularProgressIndicator(color: AppColors.teal),
+      ),
     );
   }
 }
