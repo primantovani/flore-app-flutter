@@ -13,7 +13,7 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   final DeliveryService _deliveryService = DeliveryService();
-  late Future<List<DeliveryOrder>> _ordersFuture;
+  late Future<DeliveryResult<List<DeliveryOrder>>> _ordersFuture;
 
   @override
   void initState() {
@@ -35,20 +35,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
       appBar: AppBar(
         title: const Text('Meus Pedidos', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
-      body: FutureBuilder<List<DeliveryOrder>>(
+      body: FutureBuilder<DeliveryResult<List<DeliveryOrder>>>(
         future: _ordersFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final orders = snapshot.data ?? const [];
+          final result = snapshot.data;
+          final orders = result?.data ?? const [];
 
           return RefreshIndicator(
             onRefresh: _reload,
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                if (result?.isFallback == true) ...[
+                  _buildFallbackBanner(result!.errorMessage),
+                  const SizedBox(height: 12),
+                ],
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -72,6 +77,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFallbackBanner(String? message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFd4541a).withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.cloud_off_outlined, color: Color(0xFFd4541a), size: 18),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            message ?? 'Não foi possível carregar seus pedidos. Mostrando dados de exemplo.',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6b6b6b)),
+          ),
+        ),
+      ]),
     );
   }
 }
