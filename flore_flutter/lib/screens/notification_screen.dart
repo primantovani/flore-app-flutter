@@ -27,34 +27,36 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   bool get _fcmAvailable => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+  // FCMService() so nunca deve ser chamado no iOS/web: o construtor acessa
+  // FirebaseMessaging.instance, que lanca excecao sem Firebase.initializeApp.
   late final _types = [
     _NotifItem(
       title: 'Entrega em Trânsito',
       body: 'Seu vestido saiu para entrega. Previsão: hoje até 18h.',
       icon: Icons.local_shipping_outlined,
       color: const Color(0xFFd4541a),
-      simulate: FCMService().simulateDeliveryAlert,
+      simulate: _fcmAvailable ? FCMService().simulateDeliveryAlert : null,
     ),
     _NotifItem(
       title: 'Peça no Armazém',
       body: 'Sua calça jeans chegou ao armazém Florê e está sendo preparada.',
       icon: Icons.warehouse_outlined,
       color: const Color(0xFF2a7d70),
-      simulate: FCMService().simulateWarehouseAlert,
+      simulate: _fcmAvailable ? FCMService().simulateWarehouseAlert : null,
     ),
     _NotifItem(
       title: 'Favorito Disponível',
       body: 'Uma peça da sua lista de desejos voltou ao catálogo!',
       icon: Icons.favorite_outline,
       color: const Color(0xFF3d9e8f),
-      simulate: FCMService().simulatePromoAlert,
+      simulate: _fcmAvailable ? FCMService().simulatePromoAlert : null,
     ),
     _NotifItem(
       title: 'Alerta Climático',
       body: 'Chuva intensa detectada. Sua entrega pode sofrer atraso.',
       icon: Icons.thunderstorm_outlined,
       color: const Color(0xFF1a5c52),
-      simulate: FCMService().simulateWeatherAlert,
+      simulate: _fcmAvailable ? FCMService().simulateWeatherAlert : null,
     ),
   ];
 
