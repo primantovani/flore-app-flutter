@@ -4,6 +4,8 @@
 // Gerencia permissões, token do dispositivo e exibição de
 // notificações locais simulando alertas do sistema Florê.
 
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -13,9 +15,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class FCMService {
+  FCMService._internal();
+  static final FCMService instance = FCMService._internal();
+  factory FCMService() => instance;
+
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  final _foregroundMessages = StreamController<RemoteMessage>.broadcast();
+
+  bool isInitialized = false;
+
+  /// Mensagens push recebidas de verdade com o app em primeiro plano.
+  Stream<RemoteMessage> get onForegroundMessage => _foregroundMessages.stream;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'flore_alerts',
@@ -49,9 +61,12 @@ class FCMService {
 
     final token = await _fcm.getToken();
     print('[FCM] Token do dispositivo: $token');
+    isInitialized = true;
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
+    _foregroundMessages.add(message);
+
     final notification = message.notification;
     if (notification == null) return;
 

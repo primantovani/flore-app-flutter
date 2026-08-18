@@ -1,34 +1,55 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
+import '../utils/validators.dart';
+import '../widgets/app_text_field.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  final AuthService? authService;
+
+  const SignupScreen({super.key, this.authService});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  late final _authService = widget.authService ?? AuthService();
   bool _isLoading = false;
 
-  void _signup() async {
-    if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preencha todos os campos'),
-          backgroundColor: Color(0xFFd4541a),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+  Future<void> _signup() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    if (mounted) Navigator.pushReplacementNamed(context, '/home');
+    try {
+      await _authService.signup(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+    } on AuthException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError('Não foi possível criar sua conta. Tente novamente.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.orange,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -42,37 +63,60 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFf7f5f2),
+      backgroundColor: AppColors.cream,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFf7f5f2),
+        backgroundColor: AppColors.cream,
         elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1a5c52), size: 20),
+          child: const Icon(Icons.arrow_back_ios_new, color: AppColors.tealDark, size: 20),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              _buildTitle(),
-              const SizedBox(height: 32),
-              _buildField('Nome completo', 'Priscila Mantovani', Icons.person_outline, _nameController, false),
-              const SizedBox(height: 14),
-              _buildField('E-mail', 'seu@email.com', Icons.mail_outline, _emailController, false),
-              const SizedBox(height: 14),
-              _buildPasswordField(),
-              const SizedBox(height: 8),
-              _buildTerms(),
-              const SizedBox(height: 28),
-              _buildSignupButton(),
-              const SizedBox(height: 24),
-              _buildLoginLink(),
-              const SizedBox(height: 40),
-            ],
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                _buildTitle(),
+                const SizedBox(height: 32),
+                AppTextField(
+                  label: 'Nome completo',
+                  hint: 'Priscila Mantovani',
+                  icon: Icons.person_outline,
+                  controller: _nameController,
+                  validator: Validators.name,
+                ),
+                const SizedBox(height: 14),
+                AppTextField(
+                  label: 'E-mail',
+                  hint: 'seu@email.com',
+                  icon: Icons.mail_outline,
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: Validators.email,
+                ),
+                const SizedBox(height: 14),
+                AppTextField(
+                  label: 'Senha',
+                  hint: 'Mínimo 6 caracteres',
+                  icon: Icons.lock_outline,
+                  controller: _passwordController,
+                  obscureText: true,
+                  validator: Validators.password,
+                ),
+                const SizedBox(height: 8),
+                _buildTerms(),
+                const SizedBox(height: 28),
+                _buildSignupButton(),
+                const SizedBox(height: 24),
+                _buildLoginLink(),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
@@ -85,68 +129,12 @@ class _SignupScreenState extends State<SignupScreen> {
       children: [
         Text(
           'Criar conta',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Color(0xFF1e1e1e)),
+          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.dark),
         ),
         SizedBox(height: 4),
         Text(
           'Faça parte da moda circular',
-          style: TextStyle(fontSize: 14, color: Color(0xFF6b6b6b)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildField(String label, String hint, IconData icon, TextEditingController controller, bool obscure) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1a5c52))),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          obscureText: obscure,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1e1e1e)),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFFaaaaaa)),
-            prefixIcon: Icon(icon, color: const Color(0xFF2a7d70), size: 20),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2a7d70), width: 1.5)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Senha', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1a5c52))),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1e1e1e)),
-          decoration: InputDecoration(
-            hintText: 'Mínimo 6 caracteres',
-            hintStyle: const TextStyle(color: Color(0xFFaaaaaa)),
-            prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF2a7d70), size: 20),
-            suffixIcon: GestureDetector(
-              onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-              child: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: const Color(0xFF6b6b6b), size: 20),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFe0e0e0))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2a7d70), width: 1.5)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          ),
+          style: TextStyle(fontSize: 14, color: AppColors.gray),
         ),
       ],
     );
@@ -154,17 +142,17 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _buildTerms() {
     return Row(children: [
-      const Icon(Icons.check_circle_outline, color: Color(0xFF2a7d70), size: 16),
+      const Icon(Icons.check_circle_outline, color: AppColors.teal, size: 16),
       const SizedBox(width: 8),
       Expanded(
         child: RichText(
           text: const TextSpan(
-            style: TextStyle(fontSize: 12, color: Color(0xFF6b6b6b)),
+            style: TextStyle(fontSize: 12, color: AppColors.gray),
             children: [
               TextSpan(text: 'Concordo com os '),
-              TextSpan(text: 'Termos de Uso', style: TextStyle(color: Color(0xFF2a7d70), fontWeight: FontWeight.w600)),
+              TextSpan(text: 'Termos de Uso', style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)),
               TextSpan(text: ' e '),
-              TextSpan(text: 'Política de Privacidade', style: TextStyle(color: Color(0xFF2a7d70), fontWeight: FontWeight.w600)),
+              TextSpan(text: 'Política de Privacidade', style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -180,7 +168,7 @@ class _SignupScreenState extends State<SignupScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFd4541a),
+            color: AppColors.orange,
             borderRadius: BorderRadius.circular(50),
           ),
           child: Center(
@@ -195,10 +183,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _buildLoginLink() {
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Text('Já tem uma conta? ', style: TextStyle(color: Color(0xFF6b6b6b), fontSize: 13)),
+      const Text('Já tem uma conta? ', style: TextStyle(color: AppColors.gray, fontSize: 13)),
       GestureDetector(
         onTap: () => Navigator.pop(context),
-        child: const Text('Entrar', style: TextStyle(color: Color(0xFF2a7d70), fontSize: 13, fontWeight: FontWeight.w700)),
+        child: const Text('Entrar', style: TextStyle(color: AppColors.teal, fontSize: 13, fontWeight: FontWeight.w700)),
       ),
     ]);
   }

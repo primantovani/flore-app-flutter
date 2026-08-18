@@ -20,6 +20,12 @@ class MapProvider extends ChangeNotifier {
   List<DeliveryOrder> orders = [];
   List<DeliveryPoint> mapPoints = [];
 
+  /// Mensagens de fallback (Melhoria D): preenchidas quando algum desses
+  /// dados veio do mock por falha real na API, não um erro qualquer engolido.
+  String? weatherFallbackMessage;
+  String? ordersFallbackMessage;
+  String? mapPointsFallbackMessage;
+
   final _weatherService = WeatherService();
   final _deliveryService = DeliveryService();
 
@@ -35,6 +41,9 @@ class MapProvider extends ChangeNotifier {
       _loadMapPoints(),
     ]);
 
+    hasError = weatherFallbackMessage != null ||
+        ordersFallbackMessage != null ||
+        mapPointsFallbackMessage != null;
     isLoading = false;
     notifyListeners();
   }
@@ -84,14 +93,20 @@ class MapProvider extends ChangeNotifier {
   }
 
   Future<void> _loadWeather() async {
-    weather = await _weatherService.getWeather(userLat, userLon);
+    final result = await _weatherService.getWeather(userLat, userLon);
+    weather = result.data;
+    weatherFallbackMessage = result.isFallback ? result.errorMessage : null;
   }
 
   Future<void> _loadOrders() async {
-    orders = await _deliveryService.getOrders();
+    final result = await _deliveryService.getOrders();
+    orders = result.data;
+    ordersFallbackMessage = result.isFallback ? result.errorMessage : null;
   }
 
   Future<void> _loadMapPoints() async {
-    mapPoints = await _deliveryService.getMapPoints();
+    final result = await _deliveryService.getMapPoints();
+    mapPoints = result.data;
+    mapPointsFallbackMessage = result.isFallback ? result.errorMessage : null;
   }
 }

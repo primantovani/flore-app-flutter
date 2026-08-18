@@ -78,6 +78,10 @@ class _MapScreenState extends State<MapScreen> {
                   _buildLocationBanner(context, provider),
                   const SizedBox(height: 16),
                 ],
+                if (provider.hasError) ...[
+                  _buildDataFallbackBanner(provider),
+                  const SizedBox(height: 16),
+                ],
                 if (provider.weather != null) ...[
                   WeatherCard(weather: provider.weather!),
                   const SizedBox(height: 20),
@@ -151,6 +155,38 @@ class _MapScreenState extends State<MapScreen> {
             style: TextButton.styleFrom(padding: EdgeInsets.zero),
             child: Text(actionLabel, style: const TextStyle(color: Color(0xFF2a7d70), fontWeight: FontWeight.w700)),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataFallbackBanner(MapProvider provider) {
+    final messages = [
+      provider.weatherFallbackMessage,
+      provider.ordersFallbackMessage,
+      provider.mapPointsFallbackMessage,
+    ].whereType<String>().toSet();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFd4541a).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(children: [
+            Icon(Icons.cloud_off_outlined, color: Color(0xFFd4541a), size: 18),
+            SizedBox(width: 8),
+            Text('Dados de exemplo', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFd4541a), fontSize: 13)),
+          ]),
+          const SizedBox(height: 4),
+          ...messages.map((m) => Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(m, style: const TextStyle(fontSize: 11, color: Color(0xFF6b6b6b))),
+          )),
         ],
       ),
     );
