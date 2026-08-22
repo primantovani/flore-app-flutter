@@ -21,7 +21,7 @@
       <td>{{ peca.categoria }}</td>
       <td>{{ peca.tamanho }}</td>
       <td>R$ {{ peca.preco }}</td>
-      <td>{{ peca.vendida ? 'Vendida' : 'Disponível' }}</td>
+      <td>{{ peca.status === 'sold' ? 'Vendida' : 'Disponível' }}</td>
       <td><button (click)="removerPeca(peca.id)">Remover</button></td>
     </tr>
   </tbody>

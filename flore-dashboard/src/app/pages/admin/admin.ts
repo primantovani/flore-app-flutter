@@ -47,19 +47,19 @@ export class Admin implements OnInit {
         this.novaPeca = { nome: '', categoria: '', tamanho: '', preco: 0 };
       },
       error: () => {
-        this.erro = 'Não foi possível cadastrar a peça agora.';
+        this.erro = 'Não foi possível cadastrar a peça. Verifique se você está logada.';
       }
     });
   }
 
-  removerPeca(id: string | undefined): void {
+  removerPeca(id: number | undefined): void {
     if (!id) return;
     this.closetService.removerPeca(id).subscribe({
       next: () => {
         this.pecas = this.pecas.filter(p => p.id !== id);
       },
       error: () => {
-        this.erro = 'Não foi possível remover a peça agora.';
+        this.erro = 'Não foi possível remover a peça. Verifique se você está logada.';
       }
     });
   }

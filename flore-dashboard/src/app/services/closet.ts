@@ -1,13 +1,14 @@
 ﻿import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_URL } from '../api-config';
 import { Peca } from '../models/peca.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClosetService {
-  private baseUrl = 'https://flore-back.onrender.com/api/closet';
+  private baseUrl = `${API_URL}/api/closet`;
 
   constructor(private http: HttpClient) { }
 
@@ -19,7 +20,7 @@ export class ClosetService {
     return this.http.post<Peca>(this.baseUrl, peca);
   }
 
-  removerPeca(id: string): Observable<void> {
+  removerPeca(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }

@@ -1,8 +1,9 @@
 ﻿export interface Peca {
-  id?: string;
+  id?: number;
   nome: string;
   categoria: string;
-  tamanho: string;
+  tamanho?: string;
   preco: number;
-  vendida?: boolean;
+  status?: 'available' | 'sold';
+  ownerName?: string;
 }

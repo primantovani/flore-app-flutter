@@ -1,0 +1,16 @@
+﻿<div class="login-container">
+  <div class="login-card">
+    <h1>Florê Admin</h1>
+    <p class="subtitle">Entre com sua conta para gerenciar o closet circular</p>
+
+    <div class="erro" *ngIf="erro">{{ erro }}</div>
+
+    <form (ngSubmit)="entrar()" class="login-form">
+      <input type="email" placeholder="E-mail" [(ngModel)]="credenciais.email" name="email" required />
+      <input type="password" placeholder="Senha" [(ngModel)]="credenciais.password" name="password" required />
+      <button type="submit" [disabled]="carregando">
+        {{ carregando ? 'Entrando...' : 'Entrar' }}
+      </button>
+    </form>
+  </div>
+</div>
