@@ -107,6 +107,7 @@ combinado busca+categoria e o caso de erro na compra não sendo engolido silenci
 ## Links
 
 - Site do projeto: [flore-topaz.vercel.app](https://flore-topaz.vercel.app)
+- Dashboard Angular (em produção): [flore-admin-dashboard-primantovanis-projects.vercel.app](https://flore-admin-dashboard-primantovanis-projects.vercel.app)
 - Backend (código): [github.com/Gabrielnotari/flore-backend-atualizado](https://github.com/Gabrielnotari/flore-backend-atualizado)
 - Backend (fork com correções de build): [github.com/primantovani/flore-backend-atualizado](https://github.com/primantovani/flore-backend-atualizado)
 - Backend (em produção): [flore-backend-atualizado.onrender.com](https://flore-backend-atualizado.onrender.com)
