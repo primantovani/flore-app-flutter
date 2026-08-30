@@ -104,6 +104,21 @@ combinado busca+categoria e o caso de erro na compra não sendo engolido silenci
 
 ---
 
+## Limitações conhecidas
+
+**Backend gratuito "dorme" com inatividade**
+O Render free tier derruba o serviço depois de um tempo sem uso. A primeira chamada depois disso
+pode levar até ~50s pra responder (o servidor precisa subir de novo). Vale abrir o link do backend
+ou do dashboard 1-2 minutos antes de gravar ou demonstrar.
+
+**Dados não são persistentes**
+O backend usa H2 **em memória** — cada vez que o serviço reinicia (todo ciclo de dormir/acordar do
+Render), o banco inteiro zera: contas e peças cadastradas somem. Antes de gravar o vídeo ou de uma
+avaliação, cadastre novamente a conta/peças de teste se precisar. Resolver isso de verdade exigiria
+trocar por um banco persistente (Postgres, por exemplo) — não foi feito nesta fase.
+
+---
+
 ## Links
 
 - Site do projeto: [flore-topaz.vercel.app](https://flore-topaz.vercel.app)
