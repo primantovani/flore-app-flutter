@@ -1,0 +1,37 @@
+﻿.hero {
+  margin-bottom: 32px;
+}
+.hero h1 {
+  color: #1a5c52;
+  margin-bottom: 8px;
+}
+.hero p {
+  color: #6b6b6b;
+}
+.cards {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.card {
+  background: #f7f5f2;
+  border-radius: 12px;
+  padding: 20px;
+  width: 280px;
+}
+.card h2 {
+  color: #2a7d70;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.card p {
+  color: #6b6b6b;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.card a {
+  color: #d4541a;
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+}
