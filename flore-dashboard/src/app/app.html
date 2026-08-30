@@ -3,8 +3,13 @@
   <a routerLink="/home" routerLinkActive="active">Início</a>
   <a *ngIf="logado()" routerLink="/admin" routerLinkActive="active">Peças</a>
   <a *ngIf="!logado()" routerLink="/login" routerLinkActive="active">Entrar</a>
+  <span *ngIf="logado() && nomeUsuaria()" class="saudacao">Olá, {{ nomeUsuaria() }}</span>
   <button *ngIf="logado()" class="logout-link" (click)="sair()">Sair</button>
 </nav>
 <main class="content">
   <router-outlet></router-outlet>
 </main>
+
+<div class="toast" *ngIf="toastService.toast() as t" [class.toast--erro]="t.tipo === 'erro'">
+  {{ t.mensagem }}
+</div>

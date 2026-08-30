@@ -1,12 +1,72 @@
-﻿<div class="hero">
+<div class="hero">
   <h1>Painel Administrativo Florê</h1>
-  <p>Gerencie o closet circular, acompanhe peças cadastradas e a evolução do projeto.</p>
+  <p>Visão geral do closet circular, com dados reais do backend.</p>
 </div>
+
+<div class="carregando" *ngIf="carregando">
+  <span class="spinner"></span>
+  Carregando dados do marketplace... (o backend gratuito pode levar até 50s pra acordar)
+</div>
+
+<div class="erro" *ngIf="!carregando && erro">
+  Não foi possível carregar os dados agora. O backend pode estar indisponível.
+  <button class="retry" (click)="carregar()">Tentar novamente</button>
+</div>
+
+<ng-container *ngIf="!carregando && !erro">
+  <section class="stats">
+    <div class="stat-card">
+      <span class="stat-valor">{{ totalDisponiveis }}</span>
+      <span class="stat-label">Peças no marketplace</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-valor">{{ categorias.length }}</span>
+      <span class="stat-label">Categorias ativas</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-valor">R$ {{ valorEmCirculacao.toFixed(2) }}</span>
+      <span class="stat-label">Em circulação</span>
+    </div>
+    <div class="stat-card" *ngIf="maiorCategoria as top">
+      <span class="stat-valor">{{ top.nome }}</span>
+      <span class="stat-label">Categoria mais popular ({{ top.quantidade }})</span>
+    </div>
+  </section>
+
+  <section class="categorias" *ngIf="categorias.length > 0">
+    <h2>Peças por categoria</h2>
+    <div class="barra-categoria" *ngFor="let c of categorias">
+      <span class="barra-nome">{{ c.nome }}</span>
+      <div class="barra-trilho">
+        <div class="barra-preenchida" [style.width.%]="(c.quantidade / totalDisponiveis) * 100"></div>
+      </div>
+      <span class="barra-valor">{{ c.quantidade }}</span>
+    </div>
+  </section>
+
+  <section class="meu-closet" *ngIf="minhas !== null">
+    <h2>Meu closet</h2>
+    <div class="stats">
+      <div class="stat-card stat-card--sm">
+        <span class="stat-valor">{{ minhasTotal }}</span>
+        <span class="stat-label">Peças minhas</span>
+      </div>
+      <div class="stat-card stat-card--sm">
+        <span class="stat-valor">{{ minhasDisponiveis }}</span>
+        <span class="stat-label">Disponíveis</span>
+      </div>
+      <div class="stat-card stat-card--sm">
+        <span class="stat-valor">{{ minhasVendidas }}</span>
+        <span class="stat-label">Vendidas</span>
+      </div>
+    </div>
+  </section>
+</ng-container>
 
 <div class="cards">
   <div class="card">
     <h2>Peças</h2>
-    <p>Cadastre, visualize e remova peças do closet circular diretamente pelo painel.</p>
+    <p>Cadastre, edite, marque como vendida ou remova peças do seu closet circular.</p>
     <a routerLink="/admin">Ir para gestão de peças →</a>
   </div>
   <div class="card">

@@ -1,39 +1,117 @@
-﻿<h1>Gestão do Closet Circular</h1>
+<div class="topo">
+  <h1>Gestão do Closet Circular</h1>
+  <button class="botao-primario" (click)="abrirCadastro()">+ Nova peça</button>
+</div>
 
-<div class="erro" *ngIf="erro">{{ erro }}</div>
+<div class="erro" *ngIf="erro">
+  {{ erro }}
+  <button class="retry" (click)="buscarPecas()">Tentar novamente</button>
+</div>
 
-<div class="carregando" *ngIf="carregando">Carregando peças...</div>
+<div class="carregando" *ngIf="carregando">
+  <span class="spinner"></span>
+  Carregando peças...
+</div>
 
-<table class="tabela" *ngIf="!carregando && pecas.length > 0">
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Categoria</th>
-      <th>Tamanho</th>
-      <th>Preço</th>
-      <th>Status</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let peca of pecas">
-      <td>{{ peca.nome }}</td>
-      <td>{{ peca.categoria }}</td>
-      <td>{{ peca.tamanho }}</td>
-      <td>R$ {{ peca.preco }}</td>
-      <td>{{ peca.status === 'sold' ? 'Vendida' : 'Disponível' }}</td>
-      <td><button (click)="removerPeca(peca.id)">Remover</button></td>
-    </tr>
-  </tbody>
-</table>
+<ng-container *ngIf="!carregando && !erro">
+  <div class="toolbar" *ngIf="pecas.length > 0">
+    <input
+      type="text"
+      class="busca"
+      placeholder="Buscar pela peça..."
+      [(ngModel)]="busca"
+      name="busca"
+    />
+    <select [(ngModel)]="categoriaFiltro" name="categoriaFiltro">
+      <option value="">Todas as categorias</option>
+      <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+    </select>
+    <select [(ngModel)]="ordenacao" name="ordenacao">
+      <option value="nome">Nome (A-Z)</option>
+      <option value="preco-asc">Preço (menor primeiro)</option>
+      <option value="preco-desc">Preço (maior primeiro)</option>
+      <option value="status">Status</option>
+    </select>
+  </div>
 
-<p class="vazio" *ngIf="!carregando && !erro && pecas.length === 0">Nenhuma peça cadastrada ainda.</p>
+  <table class="tabela" *ngIf="pecasFiltradas.length > 0">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Categoria</th>
+        <th>Tamanho</th>
+        <th>Preço</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let peca of pecasFiltradas">
+        <td>{{ peca.nome }}</td>
+        <td>{{ peca.categoria }}</td>
+        <td>{{ peca.tamanho || '—' }}</td>
+        <td>R$ {{ peca.preco.toFixed(2) }}</td>
+        <td>
+          <span class="badge" [class.badge--vendida]="peca.status === 'sold'">
+            {{ peca.status === 'sold' ? 'Vendida' : 'Disponível' }}
+          </span>
+        </td>
+        <td class="acoes">
+          <button class="link-acao" (click)="abrirEdicao(peca)">Editar</button>
+          <button class="link-acao" (click)="alternarStatus(peca)">
+            {{ peca.status === 'sold' ? 'Reabrir' : 'Marcar vendida' }}
+          </button>
+          <button class="link-acao link-acao--remover" (click)="confirmarRemocao(peca)">Remover</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<h2>Cadastrar nova peça</h2>
-<form (ngSubmit)="cadastrarPeca()" class="form">
-  <input type="text" placeholder="Nome" [(ngModel)]="novaPeca.nome" name="nome" required />
-  <input type="text" placeholder="Categoria" [(ngModel)]="novaPeca.categoria" name="categoria" required />
-  <input type="text" placeholder="Tamanho" [(ngModel)]="novaPeca.tamanho" name="tamanho" />
-  <input type="number" placeholder="Preço" [(ngModel)]="novaPeca.preco" name="preco" />
-  <button type="submit">Cadastrar</button>
-</form>
+  <p class="vazio" *ngIf="pecas.length === 0">Seu closet está vazio. Cadastre a primeira peça!</p>
+  <p class="vazio" *ngIf="pecas.length > 0 && pecasFiltradas.length === 0">
+    Nenhuma peça encontrada com esse filtro.
+  </p>
+</ng-container>
+
+<!-- Modal: cadastro/edição -->
+<div class="overlay" *ngIf="mostrarForm" (click)="cancelarForm()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h2>{{ itemEditando ? 'Editar peça' : 'Cadastrar peça' }}</h2>
+    <form (ngSubmit)="salvar()" class="form">
+      <label>
+        Nome
+        <input type="text" [(ngModel)]="form.nome" name="nome" required />
+      </label>
+      <label>
+        Categoria
+        <input type="text" [(ngModel)]="form.categoria" name="categoria" required />
+      </label>
+      <label>
+        Tamanho
+        <input type="text" [(ngModel)]="form.tamanho" name="tamanho" />
+      </label>
+      <label>
+        Preço (R$)
+        <input type="number" step="0.01" min="0" [(ngModel)]="form.preco" name="preco" required />
+      </label>
+      <div class="form-acoes">
+        <button type="button" class="botao-secundario" (click)="cancelarForm()">Cancelar</button>
+        <button type="submit" class="botao-primario" [disabled]="salvando">
+          {{ salvando ? 'Salvando...' : (itemEditando ? 'Salvar alterações' : 'Cadastrar') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: confirmação de remoção -->
+<div class="overlay" *ngIf="itemParaRemover as peca" (click)="cancelarRemocao()">
+  <div class="modal modal--sm" (click)="$event.stopPropagation()">
+    <h2>Remover peça</h2>
+    <p>Remover "{{ peca.nome }}" do seu closet? Essa ação não pode ser desfeita.</p>
+    <div class="form-acoes">
+      <button class="botao-secundario" (click)="cancelarRemocao()">Cancelar</button>
+      <button class="botao-perigo" (click)="removerConfirmado()">Remover</button>
+    </div>
+  </div>
+</div>
