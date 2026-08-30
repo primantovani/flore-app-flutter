@@ -28,7 +28,7 @@ class DeliveryService {
     try {
       final response = await _client
           .get(Uri.parse('$_baseUrl/api/orders'))
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         return DeliveryResult(data: data.map((e) => DeliveryOrder.fromJson(e)).toList());
@@ -47,7 +47,7 @@ class DeliveryService {
     try {
       final response = await _client
           .get(Uri.parse('$_baseUrl/api/map-points'))
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         return DeliveryResult(data: data.map((e) => DeliveryPoint.fromJson(e)).toList());

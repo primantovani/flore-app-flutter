@@ -21,4 +21,10 @@ class AppConfig {
     'API_BASE_URL',
     defaultValue: 'https://flore-backend-atualizado.onrender.com',
   );
+
+  /// Timeout único das chamadas HTTP. Era 8s em cada serviço — curto demais
+  /// pro cold start do Render (plano free, pode levar ~50s pra acordar),
+  /// o que fazia a primeira chamada depois de um tempo parado falhar com
+  /// "algo deu errado" mesmo o backend estando saudável, só lento pra subir.
+  static const Duration requestTimeout = Duration(seconds: 60);
 }

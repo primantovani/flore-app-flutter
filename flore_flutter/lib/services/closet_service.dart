@@ -55,7 +55,7 @@ class ClosetService {
 
   Future<List<ClosetItem>> _getList(String url, Map<String, String> headers) async {
     try {
-      final response = await _client.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 8));
+      final response = await _client.get(Uri.parse(url), headers: headers).timeout(AppConfig.requestTimeout);
       _throwIfError(response);
       final List data = jsonDecode(response.body) as List;
       return data.map((e) => ClosetItem.fromJson(e as Map<String, dynamic>)).toList();
@@ -89,7 +89,7 @@ class ClosetService {
               if (description != null && description.isNotEmpty) 'description': description,
             }),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       _throwIfError(response);
       return ClosetItem.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } on TimeoutException {
@@ -112,7 +112,7 @@ class ClosetService {
             headers: headers,
             body: jsonEncode(item.toCreateJson()),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       _throwIfError(response);
       return ClosetItem.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } on TimeoutException {
@@ -131,7 +131,7 @@ class ClosetService {
     try {
       final response = await _client
           .patch(Uri.parse('$_baseUrl/api/closet/$itemId/sold'), headers: headers)
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       _throwIfError(response);
     } on TimeoutException {
       throw const ClosetException(ClosetErrorType.timeout, 'Tempo de conexão esgotado. Tente novamente.');
@@ -149,7 +149,7 @@ class ClosetService {
     try {
       final response = await _client
           .delete(Uri.parse('$_baseUrl/api/closet/$itemId'), headers: headers)
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       _throwIfError(response);
     } on TimeoutException {
       throw const ClosetException(ClosetErrorType.timeout, 'Tempo de conexão esgotado. Tente novamente.');
@@ -168,7 +168,7 @@ class ClosetService {
     try {
       final response = await _client
           .post(Uri.parse('$_baseUrl/api/closet/$itemId/buy'), headers: headers)
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       _throwIfError(response);
     } on TimeoutException {
       throw const ClosetException(ClosetErrorType.timeout, 'Tempo de conexão esgotado. Tente novamente.');

@@ -41,7 +41,7 @@ class AuthService {
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email, 'password': password}),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       body = _handleAuthResponse(response);
     } on TimeoutException {
       throw const AuthException(AuthErrorType.timeout, 'Tempo de conexão esgotado. Tente novamente.');
@@ -61,7 +61,7 @@ class AuthService {
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode({'name': name, 'email': email, 'password': password}),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       body = _handleAuthResponse(response);
     } on TimeoutException {
       throw const AuthException(AuthErrorType.timeout, 'Tempo de conexão esgotado. Tente novamente.');
@@ -114,7 +114,7 @@ class AuthService {
             },
             body: jsonEncode({'name': name, 'email': email}),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       if (response.statusCode != 200) {
         throw const AuthException(AuthErrorType.server, 'Não foi possível salvar seu perfil. Tente novamente.');
       }
@@ -138,7 +138,7 @@ class AuthService {
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email}),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.requestTimeout);
       if (response.statusCode >= 500) {
         throw const AuthException(AuthErrorType.server, 'Não foi possível enviar o e-mail agora. Tente novamente.');
       }
