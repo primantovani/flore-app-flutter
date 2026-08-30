@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 import 'package:flore_flutter/models/app_user.dart';
 import 'package:flore_flutter/models/closet_item.dart';
+import 'package:flore_flutter/providers/closet_provider.dart';
 import 'package:flore_flutter/screens/profile_screen.dart';
 import 'package:flore_flutter/services/auth_service.dart';
 import 'package:flore_flutter/services/closet_service.dart';
@@ -45,9 +47,14 @@ void main() {
   });
 
   Future<void> pumpProfile(WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: ProfileScreen(authService: authService, closetService: closetService),
-    ));
+    await tester.pumpWidget(
+      ChangeNotifierProvider<ClosetProvider>(
+        create: (_) => ClosetProvider(closetService: closetService),
+        child: MaterialApp(
+          home: ProfileScreen(authService: authService),
+        ),
+      ),
+    );
   }
 
   testWidgets('renderiza a lista do closet com dados de exemplo', (tester) async {

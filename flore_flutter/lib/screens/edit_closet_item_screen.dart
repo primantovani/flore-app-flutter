@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/closet_item.dart';
+import '../providers/closet_provider.dart';
 import '../services/closet_service.dart';
 import '../theme/app_colors.dart';
 import '../utils/validators.dart';
@@ -7,11 +9,13 @@ import '../widgets/app_text_field.dart';
 
 /// Cadastro/edição de peça do closet (item 2). [existingItem] nulo = cadastro
 /// de peça nova; preenchido = edição de uma peça existente.
+///
+/// Cria/atualiza via [ClosetProvider], que já mantém "Meu Closet" atualizado
+/// pro Perfil sem precisar repassar o item pelo `Navigator.pop`.
 class EditClosetItemScreen extends StatefulWidget {
   final ClosetItem? existingItem;
-  final ClosetService? closetService;
 
-  const EditClosetItemScreen({super.key, this.existingItem, this.closetService});
+  const EditClosetItemScreen({super.key, this.existingItem});
 
   @override
   State<EditClosetItemScreen> createState() => _EditClosetItemScreenState();
@@ -19,7 +23,6 @@ class EditClosetItemScreen extends StatefulWidget {
 
 class _EditClosetItemScreenState extends State<EditClosetItemScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final _closetService = widget.closetService ?? ClosetService();
   late final _nameController = TextEditingController(text: widget.existingItem?.name);
   late final _categoryController = TextEditingController(text: widget.existingItem?.category);
   late final _priceController = TextEditingController(
@@ -36,16 +39,17 @@ class _EditClosetItemScreenState extends State<EditClosetItemScreen> {
     setState(() => _isLoading = true);
     try {
       final price = double.parse(_priceController.text.trim().replaceAll(',', '.'));
+      final closetProvider = context.read<ClosetProvider>();
       final ClosetItem saved;
       if (_isEditing) {
-        saved = await _closetService.updateItem(widget.existingItem!.copyWith(
+        saved = await closetProvider.updateItem(widget.existingItem!.copyWith(
           name: _nameController.text.trim(),
           category: _categoryController.text.trim(),
           price: price,
           description: _descriptionController.text.trim(),
         ));
       } else {
-        saved = await _closetService.createItem(
+        saved = await closetProvider.createItem(
           name: _nameController.text.trim(),
           category: _categoryController.text.trim(),
           price: price,
