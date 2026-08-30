@@ -54,11 +54,15 @@ flutter pub get
 flutter run
 ```
 
-Por padrão o app aponta pro backend rodando localmente (`http://localhost:8080`). Pra apontar
-pra um backend publicado, use `--dart-define` (ver [Melhorias desta fase](#melhorias-desta-fase-flutter)):
+Por padrão o app já aponta pro backend publicado em produção:
+[flore-backend-atualizado.onrender.com](https://flore-backend-atualizado.onrender.com) — não
+precisa configurar nada pra rodar. É plano free do Render, então a primeira chamada depois de um
+tempo sem uso pode demorar ~50s (o serviço "dorme" com inatividade).
+
+Pra rodar contra o backend local durante o desenvolvimento, use `--dart-define`:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=https://seu-backend.exemplo.com
+flutter run --dart-define=API_BASE_URL=http://localhost:8080
 ```
 
 ---
@@ -72,8 +76,15 @@ com foco em robustez, arquitetura e uma funcionalidade nova visível na demo.
 `AuthService`, `ClosetService` e `DeliveryService` apontavam cada um pra sua própria constante
 `_baseUrl`, hardcoded pro backend antigo (`flore-back.onrender.com`), hoje **fora do ar**. Criado
 `lib/config/app_config.dart`, único ponto de configuração da URL da API (mesmo padrão já usado
-pelas chaves do Firebase). Valor de fallback agora é `localhost:8080`, batendo com o ambiente real
-de desenvolvimento do backend nesta fase; trocar de ambiente não exige mais mexer em código.
+pelas chaves do Firebase). Valor padrão agora é o backend publicado em produção (ver
+[Links](#links)); trocar de ambiente não exige mais mexer em código.
+
+**Backend publicado em produção**
+O backend Spring Boot do Gabriel (`flore-backend-atualizado`) rodava só localmente — tinha um bug
+de compilação (`DaoAuthenticationProvider.setUserDetailsService`, removido no Spring Security 7) e
+não lia a porta via variável de ambiente, o que impedia publicar em qualquer PaaS. Corrigido em
+[primantovani/flore-backend-atualizado](https://github.com/primantovani/flore-backend-atualizado)
+(fork, com Dockerfile adicionado) e publicado no Render — ver [Links](#links).
 
 **Arquitetura — `ClosetProvider` como fonte única de estado**
 Perfil, Marketplace e Cadastro/Edição de peça cada um mantinha sua própria cópia local da lista
@@ -96,4 +107,6 @@ combinado busca+categoria e o caso de erro na compra não sendo engolido silenci
 ## Links
 
 - Site do projeto: [flore-topaz.vercel.app](https://flore-topaz.vercel.app)
-- Backend: [github.com/Gabrielnotari/flore-backend-atualizado](https://github.com/Gabrielnotari/flore-backend-atualizado)
+- Backend (código): [github.com/Gabrielnotari/flore-backend-atualizado](https://github.com/Gabrielnotari/flore-backend-atualizado)
+- Backend (fork com correções de build): [github.com/primantovani/flore-backend-atualizado](https://github.com/primantovani/flore-backend-atualizado)
+- Backend (em produção): [flore-backend-atualizado.onrender.com](https://flore-backend-atualizado.onrender.com)

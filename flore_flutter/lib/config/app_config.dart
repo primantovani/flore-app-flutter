@@ -6,16 +6,19 @@
 /// e expondo via `--dart-define`, dá pra trocar de ambiente sem tocar em
 /// código — mesmo padrão já usado pelas chaves do Firebase (Melhoria H).
 ///
-/// Local (padrão, backend rodando em `flutter run` na própria máquina):
+/// Padrão: aponta pro backend publicado no Render (fork com as correções
+/// de build necessárias pra rodar em produção — ver README do backend).
+/// Plano free do Render "dorme" com inatividade; a primeira chamada depois
+/// de um tempo parado pode demorar ~50s pra responder.
 ///   flutter run
 ///
-/// Apontando pra um backend publicado:
-///   flutter run --dart-define=API_BASE_URL=https://seu-backend.exemplo.com
+/// Rodando o backend local durante o desenvolvimento:
+///   flutter run --dart-define=API_BASE_URL=http://localhost:8080
 class AppConfig {
   const AppConfig._();
 
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'https://flore-backend-atualizado.onrender.com',
   );
 }
