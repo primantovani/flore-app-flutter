@@ -1,60 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/closet_item.dart';
+import '../providers/closet_provider.dart';
 import '../services/closet_service.dart';
 import '../theme/app_colors.dart';
 
 /// Fluxo de compra (item 2): navega pelas peças à venda de outras usuárias
 /// e permite comprar. Antes esse fluxo não existia — o app só mostrava o
 /// closet da própria usuária.
+///
+/// Agora com busca por nome + filtro por categoria (funcionalidade nova),
+/// usando o [ClosetProvider] compartilhado em vez de estado local.
 class MarketplaceScreen extends StatefulWidget {
-  final ClosetService? closetService;
-
-  const MarketplaceScreen({super.key, this.closetService});
+  const MarketplaceScreen({super.key});
 
   @override
   State<MarketplaceScreen> createState() => _MarketplaceScreenState();
 }
 
-enum _LoadState { loading, loaded, error }
-
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
-  late final _closetService = widget.closetService ?? ClosetService();
-  _LoadState _state = _LoadState.loading;
-  List<ClosetItem> _items = [];
-  String? _errorMessage;
-  String? _buyingItemId;
-
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ClosetProvider>().loadMarketplace();
+    });
   }
 
-  Future<void> _load() async {
-    setState(() => _state = _LoadState.loading);
-    try {
-      final items = await _closetService.getMarketplace();
-      if (!mounted) return;
-      setState(() {
-        _items = items;
-        _state = _LoadState.loaded;
-      });
-    } on ClosetException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = e.message;
-        _state = _LoadState.error;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = 'Não foi possível carregar as peças.';
-        _state = _LoadState.error;
-      });
-    }
-  }
-
-  Future<void> _confirmAndBuy(ClosetItem item) async {
+  Future<void> _confirmAndBuy(BuildContext context, ClosetItem item) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -67,27 +40,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !context.mounted) return;
 
-    setState(() => _buyingItemId = item.id);
     try {
-      await _closetService.buyItem(item.id);
-      if (!mounted) return;
-      setState(() => _items = _items.where((e) => e.id != item.id).toList());
+      await context.read<ClosetProvider>().buyItem(item);
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Compra de "${item.name}" confirmada!'), backgroundColor: AppColors.teal, behavior: SnackBarBehavior.floating),
       );
     } on ClosetException catch (e) {
-      _showError(e.message);
+      _showError(context, e.message);
     } catch (_) {
-      _showError('Não foi possível concluir a compra.');
-    } finally {
-      if (mounted) setState(() => _buyingItemId = null);
+      _showError(context, 'Não foi possível concluir a compra.');
     }
   }
 
-  void _showError(String message) {
-    if (!mounted) return;
+  void _showError(BuildContext context, String message) {
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: AppColors.orange, behavior: SnackBarBehavior.floating),
     );
@@ -98,40 +67,104 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(title: const Text('Marketplace', style: TextStyle(fontWeight: FontWeight.w700))),
-      body: SafeArea(child: _buildBody()),
+      body: SafeArea(
+        child: Consumer<ClosetProvider>(
+          builder: (context, closet, _) => Column(
+            children: [
+              _buildSearchAndFilters(context, closet),
+              Expanded(child: _buildBody(context, closet)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildBody() {
-    switch (_state) {
-      case _LoadState.loading:
+  Widget _buildSearchAndFilters(BuildContext context, ClosetProvider closet) {
+    final categories = closet.marketplaceCategories;
+    if (closet.marketplaceState != ClosetLoadState.loaded) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            onChanged: (value) => context.read<ClosetProvider>().setSearchQuery(value),
+            decoration: InputDecoration(
+              hintText: 'Buscar peça pelo nome',
+              hintStyle: const TextStyle(color: AppColors.gray, fontSize: 13),
+              prefixIcon: const Icon(Icons.search, color: AppColors.gray, size: 20),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(50), borderSide: BorderSide.none),
+            ),
+          ),
+          if (categories.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 32,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _CategoryChip(
+                    label: 'Todas',
+                    selected: closet.categoryFilter == null,
+                    onTap: () => context.read<ClosetProvider>().setCategoryFilter(null),
+                  ),
+                  ...categories.map((category) => Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: _CategoryChip(
+                          label: category,
+                          selected: closet.categoryFilter == category,
+                          onTap: () => context.read<ClosetProvider>().setCategoryFilter(category),
+                        ),
+                      )),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, ClosetProvider closet) {
+    switch (closet.marketplaceState) {
+      case ClosetLoadState.idle:
+      case ClosetLoadState.loading:
         return const Center(child: CircularProgressIndicator(color: AppColors.teal));
-      case _LoadState.error:
+      case ClosetLoadState.error:
         return _buildMessage(
           icon: Icons.wifi_off_outlined,
           title: 'Algo deu errado',
-          subtitle: _errorMessage ?? 'Tente novamente.',
+          subtitle: closet.marketplaceError ?? 'Tente novamente.',
           actionLabel: 'Tentar novamente',
-          onAction: _load,
+          onAction: () => context.read<ClosetProvider>().loadMarketplace(),
         );
-      case _LoadState.loaded:
-        if (_items.isEmpty) {
+      case ClosetLoadState.loaded:
+        final items = closet.filteredMarketplace;
+        if (items.isEmpty) {
+          final hasActiveFilter = closet.searchQuery.isNotEmpty || closet.categoryFilter != null;
           return _buildMessage(
             icon: Icons.checkroom_outlined,
-            title: 'Nenhuma peça disponível',
-            subtitle: 'Ainda não há peças à venda de outras usuárias.',
+            title: hasActiveFilter ? 'Nenhuma peça encontrada' : 'Nenhuma peça disponível',
+            subtitle: hasActiveFilter
+                ? 'Tente ajustar a busca ou o filtro de categoria.'
+                : 'Ainda não há peças à venda de outras usuárias.',
           );
         }
         return RefreshIndicator(
-          onRefresh: _load,
+          onRefresh: () => context.read<ClosetProvider>().loadMarketplace(),
           color: AppColors.teal,
           child: ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: _items.length,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            itemCount: items.length,
             itemBuilder: (_, i) => _MarketplaceItemCard(
-              item: _items[i],
-              isBuying: _buyingItemId == _items[i].id,
-              onBuy: () => _confirmAndBuy(_items[i]),
+              item: items[i],
+              isBuying: closet.buyingItemId == items[i].id,
+              onBuy: () => _confirmAndBuy(context, items[i]),
             ),
           ),
         );
@@ -168,6 +201,34 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.teal : Colors.white,
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(color: selected ? AppColors.teal : AppColors.border),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : AppColors.gray),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 import '../models/delivery_order.dart';
 import '../models/delivery_point.dart';
 
@@ -17,7 +18,7 @@ class DeliveryResult<T> {
 }
 
 class DeliveryService {
-  static const String _baseUrl = 'https://flore-back.onrender.com';
+  static const String _baseUrl = AppConfig.apiBaseUrl;
 
   final http.Client _client;
 

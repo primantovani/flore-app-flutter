@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 import 'services/fcm_service.dart';
 import 'services/auth_service.dart';
 import 'providers/map_provider.dart';
+import 'providers/closet_provider.dart';
 import 'theme/app_colors.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
@@ -28,8 +29,11 @@ void main() async {
     await FCMService().initialize();
   }
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => MapProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => MapProvider()),
+        ChangeNotifierProvider(create: (_) => ClosetProvider()),
+      ],
       child: const FloreApp(),
     ),
   );

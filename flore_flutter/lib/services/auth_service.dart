@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/app_config.dart';
 import '../models/app_user.dart';
 
 enum AuthErrorType { invalidCredentials, emailInUse, timeout, network, server }
@@ -23,7 +24,7 @@ class AuthException implements Exception {
 /// Antes login/signup só faziam `Future.delayed` e navegavam direto,
 /// sem chamar endpoint nenhum nem guardar sessão.
 class AuthService {
-  static const String _baseUrl = 'https://flore-back.onrender.com';
+  static const String _baseUrl = AppConfig.apiBaseUrl;
   static const String _tokenKey = 'flore_auth_token';
   static const String _userKey = 'flore_auth_user';
 

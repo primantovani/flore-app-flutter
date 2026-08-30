@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/app_user.dart';
 import '../models/closet_item.dart';
+import '../providers/closet_provider.dart';
 import '../services/auth_service.dart';
 import '../services/closet_service.dart';
 import '../theme/app_colors.dart';
@@ -8,60 +10,62 @@ import 'edit_closet_item_screen.dart';
 import 'edit_profile_screen.dart';
 import 'marketplace_screen.dart';
 
-/// Perfil da usuária + CRUD real do closet (item 2). Antes a lista de peças
-/// era hardcoded (`_pecas`) e "editar perfil"/"+ Adicionar peça" não faziam
-/// nada.
+/// Perfil da usuária + CRUD real do closet (item 2). A lista de peças agora
+/// vive no [ClosetProvider] (refatoração arquitetural): antes cada tela
+/// guardava sua própria cópia local em `State`, e cadastrar/editar uma peça
+/// só refletia aqui se o resultado voltasse pelo `Navigator.pop`. Com o
+/// provider compartilhado, o closet e o marketplace ficam sempre
+/// consistentes entre telas.
 class ProfileScreen extends StatefulWidget {
   final AuthService? authService;
-  final ClosetService? closetService;
 
-  const ProfileScreen({super.key, this.authService, this.closetService});
+  const ProfileScreen({super.key, this.authService});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-enum _LoadState { loading, loaded, error }
+enum _UserLoadState { loading, loaded, error }
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final _authService = widget.authService ?? AuthService();
-  late final _closetService = widget.closetService ?? ClosetService();
 
-  _LoadState _state = _LoadState.loading;
-  String? _errorMessage;
+  _UserLoadState _userState = _UserLoadState.loading;
+  String? _userErrorMessage;
   AppUser? _user;
-  List<ClosetItem> _pecas = [];
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ClosetProvider>().loadMyCloset();
+    });
   }
 
-  Future<void> _load() async {
-    setState(() => _state = _LoadState.loading);
+  Future<void> _loadUser() async {
+    setState(() => _userState = _UserLoadState.loading);
     try {
       final user = await _authService.getCurrentUser();
-      final pecas = await _closetService.getMyCloset();
       if (!mounted) return;
       setState(() {
         _user = user;
-        _pecas = pecas;
-        _state = _LoadState.loaded;
-      });
-    } on ClosetException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = e.message;
-        _state = _LoadState.error;
+        _userState = _UserLoadState.loaded;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Não foi possível carregar seu perfil.';
-        _state = _LoadState.error;
+        _userErrorMessage = 'Não foi possível carregar seu perfil.';
+        _userState = _UserLoadState.error;
       });
     }
+  }
+
+  Future<void> _refreshAll() async {
+    await Future.wait([
+      _loadUser(),
+      context.read<ClosetProvider>().loadMyCloset(),
+    ]);
   }
 
   Future<void> _openEditProfile() async {
@@ -74,30 +78,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openAddItem() async {
-    final created = await Navigator.push<ClosetItem>(
+    await Navigator.push<ClosetItem>(
       context,
       MaterialPageRoute(builder: (_) => const EditClosetItemScreen()),
     );
-    if (created != null && mounted) setState(() => _pecas = [created, ..._pecas]);
   }
 
   Future<void> _openEditItem(ClosetItem item) async {
-    final updated = await Navigator.push<ClosetItem>(
+    await Navigator.push<ClosetItem>(
       context,
       MaterialPageRoute(builder: (_) => EditClosetItemScreen(existingItem: item)),
     );
-    if (updated != null && mounted) {
-      setState(() => _pecas = _pecas.map((p) => p.id == updated.id ? updated : p).toList());
-    }
   }
 
   Future<void> _markAsSold(ClosetItem item) async {
     try {
-      await _closetService.markAsSold(item.id);
-      if (!mounted) return;
-      setState(() {
-        _pecas = _pecas.map((p) => p.id == item.id ? p.copyWith(status: ClosetItemStatus.sold) : p).toList();
-      });
+      await context.read<ClosetProvider>().markAsSold(item);
     } on ClosetException catch (e) {
       _showError(e.message);
     } catch (_) {
@@ -118,12 +114,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
-      await _closetService.deleteItem(item.id);
-      if (!mounted) return;
-      setState(() => _pecas = _pecas.where((p) => p.id != item.id).toList());
+      await context.read<ClosetProvider>().deleteItem(item);
     } on ClosetException catch (e) {
       _showError(e.message);
     } catch (_) {
@@ -164,10 +158,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildBody(BuildContext context) {
-    if (_state == _LoadState.loading) {
+    if (_userState == _UserLoadState.loading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.teal));
     }
-    if (_state == _LoadState.error) {
+    if (_userState == _UserLoadState.error) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -178,10 +172,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               const Text('Algo deu errado', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.dark)),
               const SizedBox(height: 8),
-              Text(_errorMessage ?? 'Tente novamente.', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AppColors.gray)),
+              Text(_userErrorMessage ?? 'Tente novamente.', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AppColors.gray)),
               const SizedBox(height: 20),
               GestureDetector(
-                onTap: _load,
+                onTap: _refreshAll,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(color: AppColors.teal, borderRadius: BorderRadius.circular(50)),
@@ -195,18 +189,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: _refreshAll,
       color: AppColors.teal,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            _buildProfileHeader(),
-            _buildStats(),
-            _buildMarketplaceEntry(context),
-            _buildCloset(context),
-          ],
-        ),
+      child: Consumer<ClosetProvider>(
+        builder: (context, closet, _) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                _buildProfileHeader(),
+                _buildStats(closet.myCloset),
+                _buildMarketplaceEntry(context),
+                _buildCloset(context, closet),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -271,13 +269,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return (first + last).toUpperCase();
   }
 
-  Widget _buildStats() {
-    final vendidas = _pecas.where((p) => p.status == ClosetItemStatus.sold).length;
+  Widget _buildStats(List<ClosetItem> pecas) {
+    final vendidas = pecas.where((p) => p.status == ClosetItemStatus.sold).length;
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          _StatCard(value: '${_pecas.length}', label: 'Peças\nno closet'),
+          _StatCard(value: '${pecas.length}', label: 'Peças\nno closet'),
           const SizedBox(width: 10),
           _StatCard(value: '$vendidas', label: 'Peças\nvendidas'),
           const SizedBox(width: 10),
@@ -315,7 +313,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildCloset(BuildContext context) {
+  Widget _buildCloset(BuildContext context, ClosetProvider closet) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -337,7 +335,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          if (_pecas.isEmpty)
+          if (closet.myClosetState == ClosetLoadState.loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(color: AppColors.teal)),
+            )
+          else if (closet.myClosetState == ClosetLoadState.error)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  Text(closet.myClosetError ?? 'Não foi possível carregar seu perfil.',
+                      textAlign: TextAlign.center, style: const TextStyle(color: AppColors.gray, fontSize: 13)),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => context.read<ClosetProvider>().loadMyCloset(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(color: AppColors.teal, borderRadius: BorderRadius.circular(50)),
+                      child: const Text('Tentar novamente', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (closet.myCloset.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
@@ -345,7 +367,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             )
           else
-            ..._pecas.map((peca) => _PecaCard(
+            ...closet.myCloset.map((peca) => _PecaCard(
                   peca: peca,
                   onEdit: () => _openEditItem(peca),
                   onMarkSold: peca.isAvailable ? () => _markAsSold(peca) : null,

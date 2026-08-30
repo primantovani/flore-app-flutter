@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import '../config/app_config.dart';
 import '../models/closet_item.dart';
 import 'auth_service.dart';
 
@@ -23,7 +24,7 @@ class ClosetException implements Exception {
 /// não são engolidos, cada chamada expõe estado de sucesso/erro explícito
 /// pra tela decidir o que mostrar).
 class ClosetService {
-  static const String _baseUrl = 'https://flore-back.onrender.com';
+  static const String _baseUrl = AppConfig.apiBaseUrl;
 
   final http.Client _client;
   final AuthService _authService;
