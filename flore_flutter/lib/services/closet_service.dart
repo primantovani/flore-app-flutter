@@ -41,16 +41,16 @@ class ClosetService {
     };
   }
 
-  /// Peças do usuário logado ("Meu Closet").
+  /// Peças do usuário logado ("Meu Closet"), incluindo vendidas.
   Future<List<ClosetItem>> getMyCloset() async {
     final headers = await _authHeaders();
-    return _getList('$_baseUrl/api/closet', headers);
+    return _getList('$_baseUrl/api/closet/mine', headers);
   }
 
-  /// Peças à venda de outros usuários ("Marketplace").
+  /// Peças disponíveis de todas as usuárias ("Marketplace"), público.
   Future<List<ClosetItem>> getMarketplace() async {
     final headers = await _authHeaders();
-    return _getList('$_baseUrl/api/closet/marketplace', headers);
+    return _getList('$_baseUrl/api/closet', headers);
   }
 
   Future<List<ClosetItem>> _getList(String url, Map<String, String> headers) async {
@@ -130,7 +130,7 @@ class ClosetService {
     final headers = await _authHeaders();
     try {
       final response = await _client
-          .patch(Uri.parse('$_baseUrl/api/closet/$itemId/sold'), headers: headers)
+          .patch(Uri.parse('$_baseUrl/api/closet/$itemId/status?status=sold'), headers: headers)
           .timeout(AppConfig.requestTimeout);
       _throwIfError(response);
     } on TimeoutException {
