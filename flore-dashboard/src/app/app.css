@@ -20,6 +20,20 @@
   color: white;
   font-weight: 600;
 }
+.navbar .logout-link {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #cfe8e1;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.navbar .logout-link:hover {
+  color: white;
+  font-weight: 600;
+}
 .content {
   padding: 32px;
   font-family: Georgia, serif;
