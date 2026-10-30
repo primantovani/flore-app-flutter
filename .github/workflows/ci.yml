@@ -1,0 +1,96 @@
+# CI do app Florê (Fase 7 - DevOps & DevSecOps): analise estatica e testes
+# do app Flutter, build do dashboard Angular. Relatorios ficam como artifacts
+# e no resumo da execucao (aba Summary).
+
+name: CI App Florê
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-app-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    name: Flutter - análise e testes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flore_flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Análise estática
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos --no-fatal-warnings | tee ../flutter-analyze.log
+
+      - name: Testes de unidade e widget
+        run: |
+          set -o pipefail
+          flutter test --reporter expanded 2>&1 | tee ../flutter-test.log
+
+      - name: Resumo dos testes
+        if: always()
+        run: |
+          {
+            echo '## Testes do app Flutter'
+            echo
+            tail -n 1 ../flutter-test.log | sed 's/^/    /'
+            echo
+            echo "Análise estática: $(grep -c ' • ' ../flutter-analyze.log || true) avisos (nenhum erro bloqueante)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-flutter
+          path: |
+            flutter-analyze.log
+            flutter-test.log
+          retention-days: 30
+
+  dashboard:
+    name: Dashboard Angular - build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flore-dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: flore-dashboard/package-lock.json
+
+      - run: npm ci
+
+      - name: Build de produção
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee ../dashboard-build.log
+
+      - name: Publicar build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-dist
+          path: flore-dashboard/dist/
+          retention-days: 7
