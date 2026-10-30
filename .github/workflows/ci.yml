@@ -26,7 +26,7 @@ jobs:
       run:
         working-directory: flore_flutter
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
@@ -58,7 +58,7 @@ jobs:
 
       - name: Publicar logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: relatorio-flutter
           path: |
@@ -73,9 +73,9 @@ jobs:
       run:
         working-directory: flore-dashboard
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -89,7 +89,7 @@ jobs:
           npm run build 2>&1 | tee ../dashboard-build.log
 
       - name: Publicar build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dashboard-dist
           path: flore-dashboard/dist/
